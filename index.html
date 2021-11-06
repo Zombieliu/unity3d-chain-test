@@ -1,50 +1,340 @@
 <!DOCTYPE html>
-<html lang="en-us">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity WebGL Player | MetaMaskTest</title>
-    <link rel="shortcut icon" href="TemplateData/favicon.ico">
-    <link rel="stylesheet" href="TemplateData/style.css">
-    <script src="TemplateData/UnityProgress.js"></script>
-    <script src="Build/UnityLoader.js"></script>
-    <script>
-      var unityInstance = UnityLoader.instantiate("unityContainer", "Build/Ttt.json", {onProgress: UnityProgress});
-	  window.addEventListener('load', async () => {
-    // Modern dapp browsers...
-    if (window.ethereum) {
-        window.web3 = new Web3(ethereum);
-        try {
-            // Request account access if needed
-            await ethereum.request({ method: 'eth_requestAccounts' }); //ethereum.enable();
-            // Acccounts now exposed
-            web3.eth.sendTransaction({/* ... */});
-        } catch (error) {
-            // User denied account access...
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>----</title>
+		<link rel="shortcut icon" href="TemplateData/img/favicon.ico">
+		<link rel="stylesheet" href="TemplateData/css/style.css">
+
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<script src="Build/UnityLoader.js"></script>
+				<script src="jslib/jquery-3.4.1.min.js"></script>
+		<script src="jslib/uploadfileinfo.js"></script>
+		<script type="text/javascript" src="jquery.js"></script>
+		<style>
+			body {
+				margin: 0px;
+				background-color: transparent;
+				color: #fff;
+				font-family:Monospace;
+				font-size: 35px;
+				line-height: 30px;
+				overflow: hidden;
+			}
+			#title {
+				text-align: center;
+				position: absolute;
+				top: 30px; width: 100%;
+				padding: 0px;
+				z-index:100;
+				font-size: 35px;
+				color: #ffffff;
+			}
+			#hint {
+				text-align: center;
+				position: absolute;
+				bottom: 80px; width: 100%;
+				padding: 0px;
+				z-index:100;
+				font-size: 20px;
+				color: #ffffff;
+			}
+			#load {
+				text-align: center;
+				position: absolute;
+				top: 190px; width: 100%;
+				padding: 0px;
+				z-index:100;
+				font-size: 25px;
+				color: #ffffff;
+			}
+			#bt {
+				text-align: center;
+				position: absolute;
+				bottom: 150px; width: 100%;
+				padding: 0px;
+				z-index:100;
+				font-size: 35px;
+				color: #ffffff;
+			}
+			#bt > button {
+				height: 30px;
+				bottom: 120px;
+				width: 100px;
+				background: transparent;
+				color: #ffffff;
+				outline: 1px solid #ffffff;
+				border: 0px;
+				cursor: pointer;
+				font-size: 16px;
+			}
+			#bt p {
+				max-width: 600px;
+				margin-left: auto;
+				margin-right: auto;
+				padding: 0 2em;
+			}
+			a {
+				color: #2983ff;
+			}
+		</style>
+		<script>
+			function ToggleFullScreen() {
+				var isInFullScreen = (document.fullscreenElement && document.fullscreenElement !== null) ||
+						(document.webkitFullscreenElement && document.webkitFullscreenElement !== null) ||
+						(document.mozFullScreenElement && document.mozFullScreenElement !== null) ||
+						(document.msFullscreenElement && document.msFullscreenElement !== null);
+
+				var element = document.body.getElementsByClassName("webgl-content")[0];
+
+				if (!isInFullScreen) {
+					document.getElementById("fullScreenButton").style.backgroundImage = "url('TemplateData/img/fullScreen_off.png')";
+					return (element.requestFullscreen ||
+							element.webkitRequestFullscreen ||
+							element.mozRequestFullScreen ||
+							element.msRequestFullscreen).call(element);
+				}
+				else {
+					document.getElementById("fullScreenButton").style.backgroundImage = "url('TemplateData/img/fullScreen_on.png')";
+					if (document.exitFullscreen) {
+						document.exitFullscreen();
+					} else if (document.webkitExitFullscreen) {
+						document.webkitExitFullscreen();
+					} else if (document.mozCancelFullScreen) {
+						document.mozCancelFullScreen();
+					} else if (document.msExitFullscreen) {
+						document.msExitFullscreen();
+					}
+				}
+			}
+
+			function CheckCompatibility(gameInstance, onsuccess, onerror) {
+				if (!UnityLoader.SystemInfo.hasWebGL) {
+					document.getElementById("errorBrowserBlock").style.display = "inherit";
+					onerror();
+				} else if (UnityLoader.SystemInfo.mobile) {
+					document.getElementById("warningMobileBlock").style.display = "inherit";
+					onsuccess();
+				} else if (["Firefox", "Chrome", "Safari"].indexOf(UnityLoader.SystemInfo.browser) == -1) {
+					document.getElementById("warningBrowserBlock").style.display = "inherit";
+					onsuccess();
+				} else {
+					onsuccess();
+				}
+			}
+			function checkMetamask(){
+				if ( typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask ) {
+					if (ethereum.chainID !== "0x4") { //Ropsten
+						//document.getElementById("metamaskWarning").innerText = 'Please connect to Rinkeby for testing';
+						unityInstance.SendMessage("Manager", "NetWorkHint");
+					}
+					isConnetMetaMask = true;
+					unityInstance.SendMessage("Manager", "GetAccountCallack");
+					//document.getElementById("btnConnectToMetamask").style.visibility = "hidden";
+				} else {
+					//document.getElementById("metamaskWarning").innerText = 'Please install and connect to Metamask';
+					//document.getElementById("btnConnectToMetamask").style.visibility = "hidden";
+					unityInstance.SendMessage("Manager", "InstallHint");
+				}
+			}
+
+			async function connectToMetamask(){
+				try {
+					await window.ethereum.enable();
+					checkMetamask();
+				} catch (error) {
+					if(isConnetMetaMask)
+						unityInstance.SendMessage("Manager", "ConnectSuccess");
+					else
+						unityInstance.SendMessage("Manager", "InstallHint");
+					// Handle error. Likely the user rejected the login
+					console.error(error)
+				}
+			}
+			function RuntimeInitialized() {
+
+
+			}
+
+			function UnityProgress(gameInstance, progress) {
+				if (!gameInstance.Module)
+					return;
+				document.getElementById("fullScreenButton").style.display =  "none"
+				document.getElementById("loadingBlock").style.display = "inherit";
+				document.getElementById("fullBar").style.width = (100 * progress) + "%";
+				document.getElementById("emptyBar").style.width = (100 * (1 - progress)) + "%";
+
+				if (progress == 1) {
+					document.getElementById("load").textContent ="正 在 加 载 场 景 " + 100 + "%";
+					setTimeout(function() {
+						document.getElementById("fullScreenButton").style.display = "inherit";
+						document.getElementById("loadingBlock").style.display = "none";
+						isRender = false;
+						connectToMetamask();
+					
+					}, 10000);
+					setTimeout(function() {
+						isLoading = false;
+						document.getElementById("load").remove();
+						document.getElementById("title").remove();
+
+						document.getElementById( 'hint' ).remove();
+					}, 8000);
+				}else {
+					document.getElementById("load").textContent ="正 在 加 载 场 景 " + parseInt(100 * progress).toString()+ "%";
+				}
+
+			}
+
+			var gameInstance = UnityLoader.instantiate("gameContainer", "Build/Ttt.json", {
+				onProgress: UnityProgress,
+				compatibilityCheck: CheckCompatibility,
+				Module: {
+					//TOTAL_MEMORY: 268435456,
+					onRuntimeInitialized: RuntimeInitialized,
+				},
+			});
+
+			var isConnetMetaMask = false;
+			var unityInstance = gameInstance;
+
+			/**/</script>
+	</head>
+
+	<body>
+	<div id="bt">
+		<button id="startButton">---</button>
+	</div>
+	<div id="title">
+
+-------------------------------------------------
+
+	</div>
+	<div id="hint">
+
+		==========================================================
+		
+
+	</div>
+		<div id="load">
+		正 在 加 载 场 景
+		</div>
+		<div id="container"></div>
+
+
+		<div class="keepRatio">
+
+			<div class="webgl-content">
+				<button id="fullScreenButton" onclick="ToggleFullScreen()"></button>
+				<div id="loadingBlock">
+
+					<img class="logo" src="TemplateData/img/Logo.png"></img>
+					<span class="subtitle"><br>
+			</span>
+					<div id="progressBar">
+						<div>正在加载中，请稍等 ...</div>
+						<div class="centered">
+							<div id="emptyBar"></div>
+							<div id="fullBar"></div>
+						</div>
+					</div>
+					<span class="hint">
+                <br>
+                提示：建议使用谷歌浏览器或者火狐浏览器运行
+            </span>
+					<div id="warningBrowserBlock" style="display:none;">
+						<div class="warningBrowserText">
+							Your browser may not be compatible with this website. For an optimal experience, we suggest you to download one of this popular web browsers.
+						</div>
+						<div class="browserIcons">
+							<a href="https://www.mozilla.org/firefox" target="_blank"><img src="TemplateData/img/browser-firefox.png" alt="Firefox browser"></a>
+							<a href="https://www.google.com/chrome" target="_blank"><img src="TemplateData/img/browser-chrome.png" alt="Chrome browser"></a>
+							<a href="https://www.apple.com/safari/" target="_blank"><img src="TemplateData/img/browser-safari.png" alt="Safari browser"></a>
+						</div>
+					</div>
+					<div id="warningMobileBlock" style="display:none;">
+						<div class="warningBrowserText">
+							Please note that Unity WebGL is not currently supported on mobiles.
+						</div>
+					</div>
+
+				</div>
+				<div id="gameContainer"></div>
+
+			</div>
+
+			    <!-- BEGIN WEBGL FILE BROWSER LIB -->
+    <form id="fileBrowserPopup" style="display: none;">
+        <img src="TemplateData/2x2.png" style="position: absolute; width: 100%; height: 100%;" />
+        <img src="TemplateData/White-Button.png" style="position: absolute;  top: 35%; left: 38%; width: 25%; height: 30%;" />
+
+        <label for="fileToUpload">
+            <img src="TemplateData/upload_button.png" style="position: absolute; top: 53%; left: 43.5%; width: 14%; height: 5.5%;" />
+        </label>
+        <input type="File" name="fileToUpload" id="fileToUpload" style="width: 0px; height: 0px;" onchange="sendfile(event);return false;" />
+
+        <label for="closePopup">
+            <img src="TemplateData/close_button.png" style="position: absolute; top: 60%; left: 49.0%; width: 3%; height: 3%;" />
+        </label>
+        <input type="button" name="closePopup" id="closePopup" style="width: 0px; height: 0px;" onclick="hidePopup()" />
+    </form>
+
+    <script type='text/javascript'>
+        function sendfile(e) {
+            var files = e.target.files;
+            for (var i = 0, f; f = files[i]; i++) {
+                var reader = new FileReader();
+                reader.onload = (function (file) {
+                    return function (e) {
+                        gameInstance.SendMessage('FileBrowserDialogLib', 'ApplyFileName', escape(file.name));
+
+                        (window.filedata = window.filedata ? window.filedata : {})[file.name] = e.target.result;
+                        gameInstance.SendMessage("FileBrowserDialogLib", "FileUpload", file.name);
+                    }
+                })(f);
+                reader.readAsArrayBuffer(f);
+            }
         }
-    }
-    // Legacy dapp browsers...
-    else if (window.web3) {
-        window.web3 = new Web3(web3.currentProvider);
-        // Acccounts always exposed
-        web3.eth.sendTransaction({/* ... */});
-    }
-    // Non-dapp browsers...
-    else {
-        console.log('Non-Ethereum browser detected. You should consider trying MetaMask!');
-    }
-});
-	  
+        function hidePopup() {
+            gameInstance.SendMessage("FileBrowserDialogLib", "CloseFilePopupDialog");
+        }
     </script>
-  </head>
-  <body>
-    <div class="webgl-content">
-      <div id="unityContainer" style="width: 960px; height: 600px"></div>
-      <div class="footer">
-        <div class="webgl-logo"></div>
-        <div class="fullscreen" onclick="unityInstance.SetFullscreen(1)"></div>
-        <div class="title">MetaMaskTest</div>
-      </div>
-    </div>
-  </body>
+
+    <script type='text/javascript'>
+        function FilterOfTypes(types) {
+            document.getElementsByName("fileToUpload")[0].accept = types;
+        }
+    </script>
+
+    <!-- END WEBGL FILE BROWSER LIB -->
+
+
+			<div id="errorBrowserBlock" style="display:none;">
+				<img class="logo" src="TemplateData/img/Logo.png"></img>
+
+				<div id="errorContent">
+					<div id="errorBrowserText">
+						Your browser does not support WebGL. <br> You can download one of this popular web browsers.
+					</div>
+					<div class="browserIcons">
+						<a href="https://www.mozilla.org/firefox" target="_blank"><img src="TemplateData/img/browser-firefox.png" alt="Firefox browser"></a>
+						<a href="https://www.google.com/chrome" target="_blank"><img src="TemplateData/img/browser-chrome.png" alt="Chrome browser"></a>
+						<a href="https://www.apple.com/safari/" target="_blank"><img src="TemplateData/img/browser-safari.png" alt="Safari browser"></a>
+					</div>
+				</div>
+			</div>
+
+		</div>
+
+		
+
+		<script>
+		
+
+		</script>
+
+	</body>
+
 </html>
